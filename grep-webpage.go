@@ -3,9 +3,10 @@ package main
 import (
 	"net/http"
 	"os"
-	"os/exec"
+//	"os/exec"
 	"io/ioutil"
 	"fmt"
+	"regexp"
 )
 
 func main () {
@@ -17,7 +18,7 @@ func main () {
 	{
 		os.Exit(1)
 	}
-
+	r, _ := regexp.Compile(`/<\s*\w.*?>/g`)
 
 	resp, err := http.Get(firstArg)
 
@@ -31,9 +32,10 @@ func main () {
 			fmt.Printf("%s", err)
 			os.Exit(1)
 		}
-		//fmt.Printf("%s\n", string(contents))
-		grepCmd := exec.Command("grep title").Output()
-		fmt.Println(grepCmd)
+
+		fmt.Println(string(contents))
+		fmt.Println(r.FindAllStringSubmatchIndex(string(contents), -1))
+		//fmt.Println(grepCmd)
 	}
 	//fmt.Println(resp, err)
 	//fmt.Println(args)
