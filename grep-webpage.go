@@ -2,45 +2,35 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	//	"os/exec"
-	"fmt"
-	"io/ioutil"
 	"regexp"
 )
 
 func main() {
 	args := os.Args[1:]
-	firstArg := ""
-	if args[0] != "" {
-		firstArg = args[0]
+	var pattern, url string
+	if len(args) >= 2 {
+		pattern = args[0]
+		url = args[1]
 	} else {
-		os.Exit(1)
-
+		log.Fatal("Too few args. Fist arg: regex pattern, second url")
 	}
-	r, _ := regexp.Compile(`/<\s*\w.*?>/g`)
 
-	resp, err := http.Get(firstArg)
+	resp, err := http.Get(url)
 
 	if err != nil {
-		fmt.Printf("%s", err)
-		os.Exit(1)
+		log.Fatal(err)
 	} else {
 		defer resp.Body.Close()
-		contents, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Printf("%s", err)
-			os.Exit(1)
+		lines := searchReader(resp.Body, regexPredicate(pattern))
+		for _, line := range lines {
+			fmt.Println(line)
 		}
-		fmt.Println(string(contents))
-		fmt.Println(r.FindAllStringSubmatchIndex(string(contents), -1))
-		//fmt.Println(grepCmd)
 	}
-	//fmt.Println(resp, err)
-	//fmt.Println(args)
 }
 
 func searchReader(contents io.Reader, predicate func(string) bool) []string {
@@ -51,6 +41,7 @@ func searchReader(contents io.Reader, predicate func(string) bool) []string {
 		if err == io.EOF {
 			break
 		}
+		line = line[:len(line)-1]
 		if err != nil {
 			log.Fatalf("Error when reading buffer: %s", err.Error())
 		}
@@ -59,4 +50,11 @@ func searchReader(contents io.Reader, predicate func(string) bool) []string {
 		}
 	}
 	return lines
+}
+
+func regexPredicate(pattern string) func(string) bool {
+	reg := regexp.MustCompile(pattern)
+	return func(s string) bool {
+		return reg.MatchString(s)
+	}
 }
