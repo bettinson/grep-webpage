@@ -1,22 +1,25 @@
 package main
 
 import (
+	"bufio"
+	"io"
+	"log"
 	"net/http"
 	"os"
-//	"os/exec"
-	"io/ioutil"
+	//	"os/exec"
 	"fmt"
+	"io/ioutil"
 	"regexp"
 )
 
-func main () {
+func main() {
 	args := os.Args[1:]
 	firstArg := ""
-	if (args[0] != "") {
+	if args[0] != "" {
 		firstArg = args[0]
-	} else
-	{
+	} else {
 		os.Exit(1)
+
 	}
 	r, _ := regexp.Compile(`/<\s*\w.*?>/g`)
 
@@ -32,7 +35,6 @@ func main () {
 			fmt.Printf("%s", err)
 			os.Exit(1)
 		}
-
 		fmt.Println(string(contents))
 		fmt.Println(r.FindAllStringSubmatchIndex(string(contents), -1))
 		//fmt.Println(grepCmd)
@@ -41,3 +43,20 @@ func main () {
 	//fmt.Println(args)
 }
 
+func searchReader(contents io.Reader, predicate func(string) bool) []string {
+	buff := bufio.NewReader(contents)
+	lines := make([]string, 0)
+	for {
+		line, err := buff.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Error when reading buffer: %s", err.Error())
+		}
+		if predicate(line) {
+			lines = append(lines, line)
+		}
+	}
+	return lines
+}
